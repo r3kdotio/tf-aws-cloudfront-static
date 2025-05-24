@@ -10,4 +10,3 @@ variable "subject_alternative_name" {
   type    = string
   default = "www.rjdkolb.com"
 }
-
