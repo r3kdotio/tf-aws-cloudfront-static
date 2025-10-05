@@ -26,7 +26,7 @@ resource "aws_s3_bucket_policy" "static_site" {
         Resource  = "${aws_s3_bucket.static_site.arn}/*",
         Condition = {
           StringEquals = {
-            "AWS:SourceArn" = aws_cloudfront_distribution.static_site.arn
+            "AWS:SourceArn" = aws_cloudfront_distribution.static_site_distribution.arn
           }
         }
       }

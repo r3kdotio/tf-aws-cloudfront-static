@@ -3,8 +3,13 @@ provider "aws" {
   region = "us-east-1"
 }
 
+locals {
+  s3_origin_id = "${var.s3_bucket_name}-s3-static-site"
+}
+
+
 resource "aws_cloudfront_origin_access_control" "static_site" {
-  name                              = "static-site-oac"
+  name                              = "${var.s3_bucket_name}-static-site-oac"
   description                       = "OAC for static site"
   origin_access_control_origin_type = "s3"
   signing_behavior                  = "always"
@@ -12,7 +17,7 @@ resource "aws_cloudfront_origin_access_control" "static_site" {
 }
 
 resource "aws_cloudfront_function" "rewrite_index" {
-  name    = "rewrite-index-html"
+  name    = "${var.s3_bucket_name}-rewrite-index-html"
   runtime = "cloudfront-js-1.0"
   comment = "Rewrite URLs ending with / or no extension to /index.html"
   publish = true
@@ -31,7 +36,7 @@ EOT
 }
 
 resource "aws_cloudfront_cache_policy" "static_site_cache_policy" {
-  name        = "static-site-cache-policy"
+  name        = "${var.s3_bucket_name}-static-site-cache-policy"
   comment     = "Cache policy for static site with function processing"
   default_ttl = 60    # 1 minute in seconds
   max_ttl     = 600 # 5 minutes in seconds
@@ -52,12 +57,12 @@ resource "aws_cloudfront_cache_policy" "static_site_cache_policy" {
   }
 }
 
-resource "aws_cloudfront_distribution" "static_site" {
+resource "aws_cloudfront_distribution" "static_site_distribution" {
   enabled             = true
   default_root_object = "index.html"
   origin {
     domain_name              = aws_s3_bucket.static_site.bucket_regional_domain_name
-    origin_id                = "s3-static-site"
+    origin_id                = local.s3_origin_id
     origin_access_control_id = aws_cloudfront_origin_access_control.static_site.id
   }
   restrictions {
@@ -69,7 +74,7 @@ resource "aws_cloudfront_distribution" "static_site" {
   default_cache_behavior {
     allowed_methods  = ["GET", "HEAD"]
     cached_methods   = ["GET", "HEAD"]
-    target_origin_id = "s3-static-site"
+    target_origin_id = local.s3_origin_id
     viewer_protocol_policy = "redirect-to-https"
     function_association {
       event_type   = "viewer-request"
